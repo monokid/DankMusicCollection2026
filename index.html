@@ -27,8 +27,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      transition: all 0.6s cubic-bezier(0.17, 0.67, 0.88, 1);
+      padding-top: 40px; /* Space for title */
     }
 
     /* Animated pulsing gradient background */
@@ -75,7 +74,7 @@
     h1 {
       text-align: center;
       font-size: 2.4rem;
-      margin: 0 0 24px;
+      margin: 0 0 20px;
       background: linear-gradient(90deg, var(--glow-primary), var(--glow-secondary), var(--glow-accent));
       -webkit-background-clip: text;
       background-clip: text;
@@ -108,18 +107,17 @@
       box-shadow: 0 0 16px rgba(0, 170, 255, 0.7);
     }
 
-    /* Search container — centered, slides up gently */
+    /* Search container — starts lower, slides up gently */
     .search-container {
       position: relative;
       width: 100%;
       max-width: 650px;
-      transform: translateY(0);
-      transition: transform 0.5s cubic-bezier(0.17, 0.67, 0.88, 1);
-      margin-bottom: 20px;
+      margin: 40px auto 20px; /* Initial space below tabs */
+      transition: margin 0.5s cubic-bezier(0.17, 0.67, 0.88, 1);
     }
 
     .search-container.slide-up {
-      transform: translateY(-80px); /* Gentle lift, not off-screen */
+      margin: 20px auto 20px; /* Only move up slightly */
     }
 
     .search-box {
@@ -145,6 +143,7 @@
       box-shadow: 0 0 30px rgba(0, 255, 255, 0.8), 
                   inset 0 0 10px rgba(0, 100, 255, 0.3);
       border-color: var(--glow-secondary);
+      transform: scale(1.01);
     }
 
     .clear-btn {
@@ -390,7 +389,6 @@
       });
     }
 
-    // Psychedelic typing effect
     function startTypingEffect() {
       document.body.style.setProperty('--glow-primary', '#f0f');
       document.body.style.setProperty('--glow-secondary', '#ff0');
@@ -424,7 +422,6 @@
           return { ...t, _key: key, _artistNorm: normalizeStr(artist) };
         });
 
-        // Build indexes
         artistIndex = {};
         normalizedTracks.forEach(t => {
           const norm = t._artistNorm;
@@ -436,7 +433,6 @@
         buildEventTree();
         renderStats();
 
-        // UI setup
         const searchInput = document.getElementById('searchInput');
         const searchContainer = document.getElementById('searchContainer');
         const resultsDiv = document.getElementById('results');
@@ -444,7 +440,6 @@
         searchInput.addEventListener('input', () => {
           const query = searchInput.value.trim();
           
-          // Typing effect
           clearTimeout(typingTimeout);
           startTypingEffect();
           typingTimeout = setTimeout(stopTypingEffect, 800);
@@ -465,7 +460,6 @@
           stopTypingEffect();
         });
 
-        // Toggle views
         document.getElementById('btnSearch').addEventListener('click', () => {
           activateTab('search');
           stopTypingEffect();
@@ -499,7 +493,6 @@
           }
         }
 
-        // Close modals
         document.querySelectorAll('.modal .close, .modal').forEach(el => {
           el.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal') || e.target.classList.contains('close')) {
@@ -514,9 +507,6 @@
         document.getElementById('results').innerHTML = '<div style="color:#f66;text-align:center">❌ Failed to load data.json</div>';
         console.error(err);
       });
-
-    // ... [rest of functions: renderStats, computeStats, getTrackHistory, showTrackModal, showArtistModal, performSearch, renderBrowseView]
-    // (Identical to previous version — omitted for brevity but included in full file below)
 
     function renderStats() {
       const stats = computeStats();
@@ -699,7 +689,6 @@
         `;
       }).join('');
 
-      // Attach listeners
       document.querySelectorAll('.track').forEach(card => {
         card.addEventListener('click', () => {
           const key = card.dataset.key;
@@ -718,7 +707,7 @@
 
     function renderBrowseView() {
       let html = '';
-      const sortedEvents = Object.keys(eventTree).sort().reverse(); // newest first
+      const sortedEvents = Object.keys(eventTree).sort().reverse();
 
       sortedEvents.forEach(event => {
         html += `
@@ -764,7 +753,6 @@
 
       document.getElementById('browseView').innerHTML = html || '<div>No data to browse.</div>';
 
-      // Attach collapse toggle
       document.querySelectorAll('.section-title').forEach(title => {
         title.addEventListener('click', () => {
           const event = title.dataset.event;
@@ -775,7 +763,6 @@
         });
       });
 
-      // Attach listeners to new elements
       document.querySelectorAll('.song-item').forEach(card => {
         card.addEventListener('click', () => {
           const key = card.dataset.key;
