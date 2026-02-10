@@ -12,6 +12,7 @@
       --text-main: #e0f7ff;
       --card-bg: rgba(8, 12, 25, 0.8);
       --search-bg: rgba(10, 20, 40, 0.7);
+      --bg-pulse: 0.2;
     }
 
     body {
@@ -23,12 +24,11 @@
       font-family: 'Exo 2', sans-serif;
       overflow-x: hidden;
       position: relative;
-      height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      transition: padding-top 0.4s ease;
+      transition: all 0.6s cubic-bezier(0.17, 0.67, 0.88, 1);
     }
 
     /* Animated pulsing gradient background */
@@ -40,6 +40,7 @@
                   radial-gradient(circle at 80% 70%, var(--glow-secondary), transparent 30%),
                   radial-gradient(circle at 50% 50%, var(--glow-accent), transparent 40%);
       animation: pulse 12s ease-in-out infinite;
+      opacity: var(--bg-pulse);
       z-index: -2;
     }
 
@@ -107,17 +108,18 @@
       box-shadow: 0 0 16px rgba(0, 170, 255, 0.7);
     }
 
-    /* Search container — centered by default, slides up on input */
+    /* Search container — centered, slides up gently */
     .search-container {
       position: relative;
       width: 100%;
       max-width: 650px;
       transform: translateY(0);
       transition: transform 0.5s cubic-bezier(0.17, 0.67, 0.88, 1);
+      margin-bottom: 20px;
     }
 
     .search-container.slide-up {
-      transform: translateY(-120px);
+      transform: translateY(-80px); /* Gentle lift, not off-screen */
     }
 
     .search-box {
@@ -322,7 +324,7 @@
 
   <div class="search-container" id="searchContainer">
     <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Search song, artist, event, or contributor..." autocomplete="off" />
+      <input type="text" id="searchInput" placeholder="" autocomplete="off" />
       <button class="clear-btn" id="clearBtn">×</button>
     </div>
   </div>
@@ -354,6 +356,7 @@
     let normalizedTracks = [];
     let artistIndex = {};
     let eventTree = {};
+    let typingTimeout = null;
 
     function normalizeStr(s) {
       if (!s) return '';
@@ -387,10 +390,32 @@
       });
     }
 
+    // Psychedelic typing effect
+    function startTypingEffect() {
+      document.body.style.setProperty('--glow-primary', '#f0f');
+      document.body.style.setProperty('--glow-secondary', '#ff0');
+      document.body.style.setProperty('--glow-accent', '#0ff');
+      document.body.style.setProperty('--bg-pulse', '0.35');
+    }
+
+    function stopTypingEffect() {
+      document.body.style.setProperty('--glow-primary', '#0af');
+      document.body.style.setProperty('--glow-secondary', '#0ff');
+      document.body.style.setProperty('--glow-accent', '#f0f');
+      document.body.style.setProperty('--bg-pulse', '0.2');
+    }
+
     fetch('data.json')
       .then(res => res.json())
       .then(data => {
-        allTracks = data;
+        allTracks = data.map(t => {
+          const clean = {};
+          for (let key in t) {
+            const cleanKey = key.trim().replace(/\s+$/, '');
+            clean[cleanKey] = typeof t[key] === 'string' ? t[key].trim() : t[key];
+          }
+          return clean;
+        });
 
         normalizedTracks = allTracks.map(t => {
           const artist = (t.artist || '').trim();
@@ -418,6 +443,12 @@
 
         searchInput.addEventListener('input', () => {
           const query = searchInput.value.trim();
+          
+          // Typing effect
+          clearTimeout(typingTimeout);
+          startTypingEffect();
+          typingTimeout = setTimeout(stopTypingEffect, 800);
+
           if (query) {
             searchContainer.classList.add('slide-up');
             performSearch();
@@ -431,18 +462,22 @@
           searchInput.value = '';
           searchContainer.classList.remove('slide-up');
           resultsDiv.innerHTML = '';
+          stopTypingEffect();
         });
 
         // Toggle views
         document.getElementById('btnSearch').addEventListener('click', () => {
           activateTab('search');
+          stopTypingEffect();
         });
         document.getElementById('btnBrowse').addEventListener('click', () => {
           activateTab('browse');
           renderBrowseView();
+          stopTypingEffect();
         });
         document.getElementById('btnStats').addEventListener('click', () => {
           activateTab('stats');
+          stopTypingEffect();
         });
 
         function activateTab(tab) {
@@ -453,7 +488,7 @@
           if (tab === 'search') {
             document.getElementById('btnSearch').classList.add('active');
             document.getElementById('results').style.display = 'block';
-            searchContainer.classList.remove('slide-up'); // reset
+            searchContainer.classList.remove('slide-up');
             resultsDiv.innerHTML = '';
           } else if (tab === 'browse') {
             document.getElementById('btnBrowse').classList.add('active');
@@ -479,6 +514,9 @@
         document.getElementById('results').innerHTML = '<div style="color:#f66;text-align:center">❌ Failed to load data.json</div>';
         console.error(err);
       });
+
+    // ... [rest of functions: renderStats, computeStats, getTrackHistory, showTrackModal, showArtistModal, performSearch, renderBrowseView]
+    // (Identical to previous version — omitted for brevity but included in full file below)
 
     function renderStats() {
       const stats = computeStats();
