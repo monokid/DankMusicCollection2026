@@ -423,14 +423,14 @@
             performSearch();
           } else {
             searchContainer.classList.remove('slide-up');
-            resultsDiv.innerHTML = '<div>Type to search...</div>';
+            resultsDiv.innerHTML = '';
           }
         });
 
         document.getElementById('clearBtn').addEventListener('click', () => {
           searchInput.value = '';
           searchContainer.classList.remove('slide-up');
-          resultsDiv.innerHTML = '<div>Type to search...</div>';
+          resultsDiv.innerHTML = '';
         });
 
         // Toggle views
@@ -454,7 +454,7 @@
             document.getElementById('btnSearch').classList.add('active');
             document.getElementById('results').style.display = 'block';
             searchContainer.classList.remove('slide-up'); // reset
-            resultsDiv.innerHTML = '<div>Type to search...</div>';
+            resultsDiv.innerHTML = '';
           } else if (tab === 'browse') {
             document.getElementById('btnBrowse').classList.add('active');
             document.getElementById('browseView').style.display = 'block';
@@ -473,7 +473,7 @@
           });
         });
 
-        resultsDiv.innerHTML = '<div>Type to search...</div>';
+        resultsDiv.innerHTML = '';
       })
       .catch(err => {
         document.getElementById('results').innerHTML = '<div style="color:#f66;text-align:center">❌ Failed to load data.json</div>';
@@ -628,7 +628,7 @@
       const resultsDiv = document.getElementById('results');
       
       if (!query) {
-        resultsDiv.innerHTML = '<div>Type to search...</div>';
+        resultsDiv.innerHTML = '';
         return;
       }
 
