@@ -141,4 +141,618 @@
 
     input:focus {
       box-shadow: 0 0 30px rgba(0, 255, 255, 0.8), 
-                  inset 0 0 10px rgba(0, 100, 
+                  inset 0 0 10px rgba(0, 100, 255, 0.3);
+      border-color: var(--glow-secondary);
+    }
+
+    .clear-btn {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 1.4rem;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    .clear-btn:hover {
+      opacity: 1;
+      color: var(--glow-secondary);
+    }
+
+    .results, .browse-view, .stats-view {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 16px;
+      transition: opacity 0.4s;
+    }
+
+    .track, .song-item {
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: 14px;
+      border-left: 4px solid var(--glow-primary);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      margin-bottom: 14px;
+    }
+
+    .track:hover, .song-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(0, 170, 255, 0.3);
+      border-left: 4px solid var(--glow-secondary);
+    }
+
+    .title {
+      font-size: 1.4rem;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .artist {
+      color: #4af;
+      font-weight: 500;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      cursor: pointer;
+    }
+
+    .meta {
+      font-size: 0.9rem;
+      color: #8cf;
+      margin: 6px 0;
+      opacity: 0.9;
+    }
+
+    .section-title {
+      color: var(--glow-secondary);
+      margin: 28px 0 14px;
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title::before {
+      content: "▶";
+      transition: transform 0.2s;
+    }
+    .section-title.open::before {
+      transform: rotate(90deg);
+    }
+
+    .collapsible {
+      display: none;
+    }
+    .collapsible.open {
+      display: block;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-top: 24px;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      padding: 22px;
+      border-radius: 14px;
+      border: 1px solid rgba(0, 170, 255, 0.3);
+    }
+    .stat-card h3 {
+      color: var(--glow-secondary);
+      margin-top: 0;
+    }
+    .stat-list li {
+      margin: 6px 0;
+      color: #ccc;
+    }
+
+    .stats-footer {
+      text-align: center;
+      margin: 30px 0;
+      color: #8cf;
+      font-style: italic;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    .modal.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .modal-content {
+      background: rgba(10, 15, 30, 0.95);
+      border: 1px solid var(--glow-primary);
+      border-radius: 18px;
+      padding: 28px;
+      max-width: 700px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 0 40px rgba(0, 170, 255, 0.5);
+    }
+    .modal h2 {
+      color: var(--glow-secondary);
+      margin: 0 0 16px;
+      text-shadow: 0 0 12px rgba(0, 255, 255, 0.4);
+    }
+    .modal p {
+      margin: 10px 0;
+      line-height: 1.6;
+    }
+    .close {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      font-size: 1.6rem;
+      color: var(--glow-primary);
+      cursor: pointer;
+      text-shadow: 0 0 8px rgba(0, 170, 255, 0.5);
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700&display=swap');
+  </style>
+</head>
+<body>
+  <h1>Dank Music Collection</h1>
+
+  <div class="controls">
+    <button class="btn active" id="btnSearch">Search</button>
+    <button class="btn" id="btnBrowse">Browse All</button>
+    <button class="btn" id="btnStats">Statistics</button>
+  </div>
+
+  <div class="search-container" id="searchContainer">
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Search song, artist, event, or contributor..." autocomplete="off" />
+      <button class="clear-btn" id="clearBtn">×</button>
+    </div>
+  </div>
+
+  <div class="results" id="results"></div>
+  <div class="browse-view" id="browseView" style="display:none;"></div>
+  <div class="stats-view" id="statsView" style="display:none;"></div>
+
+  <!-- Modals -->
+  <div class="modal" id="trackModal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="modalTitle">Track Info</h2>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="artistModal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="artistModalTitle">Artist Info</h2>
+      <div id="artistModalContent"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
+  <script>
+    let allTracks = [];
+    let normalizedTracks = [];
+    let artistIndex = {};
+    let eventTree = {};
+
+    function normalizeStr(s) {
+      if (!s) return '';
+      return s.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.toString().replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      }[m]));
+    }
+
+    function formatDateFromEvent(eventName) {
+      const match = (eventName || '').match(/\b(20\d{2})(\d{2})(\d{2})\b/);
+      if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+      return 'Unknown';
+    }
+
+    function buildEventTree() {
+      eventTree = {};
+      normalizedTracks.forEach(t => {
+        const event = (t.event_folder || 'Unknown Event').trim();
+        const contrib = (t.contributor || 'Anonymous').trim();
+        const phase = (t.phase || '').trim() || '—';
+
+        if (!eventTree[event]) eventTree[event] = {};
+        if (!eventTree[event][contrib]) eventTree[event][contrib] = {};
+        if (!eventTree[event][contrib][phase]) eventTree[event][contrib][phase] = [];
+        eventTree[event][contrib][phase].push(t);
+      });
+    }
+
+    fetch('data.json')
+      .then(res => res.json())
+      .then(data => {
+        allTracks = data;
+
+        normalizedTracks = allTracks.map(t => {
+          const artist = (t.artist || '').trim();
+          const title = (t.title || '').trim();
+          const key = normalizeStr(artist + ' - ' + title);
+          return { ...t, _key: key, _artistNorm: normalizeStr(artist) };
+        });
+
+        // Build indexes
+        artistIndex = {};
+        normalizedTracks.forEach(t => {
+          const norm = t._artistNorm;
+          if (!norm) return;
+          if (!artistIndex[norm]) artistIndex[norm] = [];
+          artistIndex[norm].push(t);
+        });
+
+        buildEventTree();
+        renderStats();
+
+        // UI setup
+        const searchInput = document.getElementById('searchInput');
+        const searchContainer = document.getElementById('searchContainer');
+        const resultsDiv = document.getElementById('results');
+
+        searchInput.addEventListener('input', () => {
+          const query = searchInput.value.trim();
+          if (query) {
+            searchContainer.classList.add('slide-up');
+            performSearch();
+          } else {
+            searchContainer.classList.remove('slide-up');
+            resultsDiv.innerHTML = '<div>Type to search...</div>';
+          }
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+          searchInput.value = '';
+          searchContainer.classList.remove('slide-up');
+          resultsDiv.innerHTML = '<div>Type to search...</div>';
+        });
+
+        // Toggle views
+        document.getElementById('btnSearch').addEventListener('click', () => {
+          activateTab('search');
+        });
+        document.getElementById('btnBrowse').addEventListener('click', () => {
+          activateTab('browse');
+          renderBrowseView();
+        });
+        document.getElementById('btnStats').addEventListener('click', () => {
+          activateTab('stats');
+        });
+
+        function activateTab(tab) {
+          document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+          document.getElementById('results').style.display = 'none';
+          document.getElementById('browseView').style.display = 'none';
+          document.getElementById('statsView').style.display = 'none';
+          if (tab === 'search') {
+            document.getElementById('btnSearch').classList.add('active');
+            document.getElementById('results').style.display = 'block';
+            searchContainer.classList.remove('slide-up'); // reset
+            resultsDiv.innerHTML = '<div>Type to search...</div>';
+          } else if (tab === 'browse') {
+            document.getElementById('btnBrowse').classList.add('active');
+            document.getElementById('browseView').style.display = 'block';
+          } else if (tab === 'stats') {
+            document.getElementById('btnStats').classList.add('active');
+            document.getElementById('statsView').style.display = 'block';
+          }
+        }
+
+        // Close modals
+        document.querySelectorAll('.modal .close, .modal').forEach(el => {
+          el.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal') || e.target.classList.contains('close')) {
+              document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+            }
+          });
+        });
+
+        resultsDiv.innerHTML = '<div>Type to search...</div>';
+      })
+      .catch(err => {
+        document.getElementById('results').innerHTML = '<div style="color:#f66;text-align:center">❌ Failed to load data.json</div>';
+        console.error(err);
+      });
+
+    function renderStats() {
+      const stats = computeStats();
+      let html = `
+        <div class="stats-grid">
+          <div class="stat-card">
+            <h3>Top Songs (Most Played)</h3>
+            <ul class="stat-list">
+              ${stats.topSongs.map(([key, count]) => {
+                const track = normalizedTracks.find(t => t._key === key);
+                return `<li>${count}× ${escapeHtml(track?.title || '—')} by ${escapeHtml(track?.artist || 'Unknown')}</li>`;
+              }).join('')}
+            </ul>
+          </div>
+
+          <div class="stat-card">
+            <h3>Top Contributors</h3>
+            <ul class="stat-list">
+              ${stats.topContributors.map(([name, count]) => `<li>${count} tracks • ${escapeHtml(name)}</li>`).join('')}
+            </ul>
+          </div>
+
+          <div class="stat-card">
+            <h3>Top Artists</h3>
+            <ul class="stat-list">
+              ${stats.topArtists.map(([name, count]) => `<li>${count} appearances • ${escapeHtml(name)}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+
+        <div class="stat-card" style="margin-top:24px;">
+          <h3>Collection Overview</h3>
+          <p>✨ ${stats.totalTracks} tracks • ${stats.uniqueSongs} unique songs • ${stats.totalEvents} events</p>
+          <p>📅 Active from: ${stats.timeline}</p>
+        </div>
+      `;
+      document.getElementById('statsView').innerHTML = html;
+    }
+
+    function computeStats() {
+      const songCount = {};
+      const contribCount = {};
+      const artistCount = {};
+      const eventDates = {};
+
+      normalizedTracks.forEach(t => {
+        const key = t._key;
+        const contrib = t.contributor || 'Anonymous';
+        const artist = t.artist || 'Unknown';
+        const event = t.event_folder || 'Unknown';
+
+        songCount[key] = (songCount[key] || 0) + 1;
+        contribCount[contrib] = (contribCount[contrib] || 0) + 1;
+        artistCount[artist] = (artistCount[artist] || 0) + 1;
+        if (event) {
+          const date = formatDateFromEvent(event);
+          if (date !== 'Unknown') {
+            eventDates[date] = event;
+          }
+        }
+      });
+
+      const sortedEvents = Object.keys(eventDates).sort();
+      const timeline = sortedEvents.length > 0 
+        ? `${sortedEvents[0]} → ${sortedEvents[sortedEvents.length - 1]}`
+        : 'No dates found';
+
+      return {
+        topSongs: Object.entries(songCount).sort((a,b) => b[1]-a[1]).slice(0, 10),
+        topContributors: Object.entries(contribCount).sort((a,b) => b[1]-a[1]).slice(0, 10),
+        topArtists: Object.entries(artistCount).sort((a,b) => b[1]-a[1]).slice(0, 10),
+        timeline,
+        totalEvents: new Set(allTracks.map(t => t.event_folder)).size,
+        totalTracks: allTracks.length,
+        uniqueSongs: new Set(normalizedTracks.map(t => t._key)).size
+      };
+    }
+
+    function getTrackHistory(track) {
+      return normalizedTracks.filter(t => t._key === track._key);
+    }
+
+    function getArtistHistory(artistNorm) {
+      return artistIndex[artistNorm] || [];
+    }
+
+    function showTrackModal(track) {
+      const history = getTrackHistory(track);
+      const first = history.reduce((a, b) => a.event_folder < b.event_folder ? a : b, history[0]);
+      const contributors = [...new Set(history.map(t => t.contributor))].join(', ');
+      const artistHistory = getArtistHistory(track._artistNorm);
+      const artistPlays = artistHistory.length;
+
+      document.getElementById('modalTitle').textContent = `${track.title || '—'} by ${track.artist || 'Unknown'}`;
+      document.getElementById('modalContent').innerHTML = `
+        <p><strong>📅 First played:</strong> ${formatDateFromEvent(first.event_folder)} by ${escapeHtml(first.contributor)}</p>
+        <p><strong>🔁 Times brought:</strong> ${history.length}</p>
+        <p><strong>👥 Brought by:</strong> ${escapeHtml(contributors)}</p>
+        <p><strong>🎤 Artist:</strong> <span class="artist-link" data-artist="${escapeHtml(track._artistNorm)}">${escapeHtml(track.artist || 'Unknown')}</span> 
+           (<em>${artistPlays} times total</em>)</p>
+      `;
+      document.getElementById('trackModal').classList.add('active');
+
+      document.querySelector('#modalContent .artist-link')?.addEventListener('click', (e) => {
+        const artistNorm = e.target.dataset.artist;
+        showArtistModal(artistNorm);
+        document.getElementById('trackModal').classList.remove('active');
+      });
+    }
+
+    function showArtistModal(artistNorm) {
+      const tracks = getArtistHistory(artistNorm);
+      if (tracks.length === 0) return;
+
+      const first = tracks.reduce((a, b) => a.event_folder < b.event_folder ? a : b, tracks[0]);
+      const last = tracks.reduce((a, b) => a.event_folder > b.event_folder ? a : b, tracks[0]);
+      const contribCount = {};
+      const phaseCount = {};
+      tracks.forEach(t => {
+        contribCount[t.contributor] = (contribCount[t.contributor] || 0) + 1;
+        const p = (t.phase || '').trim() || '—';
+        phaseCount[p] = (phaseCount[p] || 0) + 1;
+      });
+      const topContrib = Object.entries(contribCount).sort((a,b) => b[1]-a[1])[0];
+      const topPhases = Object.entries(phaseCount).sort((a,b) => b[1]-a[1]).slice(0,3);
+
+      let list = '<ul>';
+      tracks.forEach(t => {
+        list += `<li>${escapeHtml(t.title)} • ${escapeHtml(t.event_folder)} • ${escapeHtml(t.contributor)}</li>`;
+      });
+      list += '</ul>';
+
+      document.getElementById('artistModalTitle').textContent = tracks[0].artist || 'Unknown Artist';
+      document.getElementById('artistModalContent').innerHTML = `
+        <p><strong>📊 Total tracks:</strong> ${tracks.length}</p>
+        <p><strong>📅 Active from:</strong> ${formatDateFromEvent(first.event_folder)} to ${formatDateFromEvent(last.event_folder)}</p>
+        <p><strong>👑 Top contributor:</strong> ${topContrib ? `${topContrib[0]} (${topContrib[1]} times)` : '—'}</p>
+        <p><strong>🌀 Common phases:</strong> ${topPhases.map(([p,c]) => `${p} (${c})`).join(', ')}</p>
+        <h3>Songs:</h3>
+        ${list}
+      `;
+      document.getElementById('artistModal').classList.add('active');
+    }
+
+    function performSearch() {
+      const query = document.getElementById('searchInput').value.trim();
+      const resultsDiv = document.getElementById('results');
+      
+      if (!query) {
+        resultsDiv.innerHTML = '<div>Type to search...</div>';
+        return;
+      }
+
+      const fuse = new Fuse(normalizedTracks, {
+        keys: ['title', 'artist', 'album', 'contributor', 'event_folder', 'genre', 'phase'],
+        threshold: 0.35,
+        includeScore: true
+      });
+
+      const results = fuse.search(query).slice(0, 50);
+
+      if (results.length === 0) {
+        resultsDiv.innerHTML = '<div style="text-align:center;color:#888">No matches found. Try another term!</div>';
+        return;
+      }
+
+      resultsDiv.innerHTML = results.map(r => {
+        const t = r.item;
+        const phaseDisplay = (t.phase || '').trim() || '—';
+        return `
+          <div class="track" data-key="${escapeHtml(t._key)}">
+            <div class="title">${escapeHtml(t.title || '—')}</div>
+            <div class="artist" data-artist="${escapeHtml(t._artistNorm)}">${escapeHtml(t.artist || 'Unknown Artist')}</div>
+            <div class="meta">
+              🎧 ${escapeHtml(t.contributor)} • 
+              📅 ${escapeHtml(t.event_folder)} • 
+              ⏳ ${escapeHtml(phaseDisplay)}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Attach listeners
+      document.querySelectorAll('.track').forEach(card => {
+        card.addEventListener('click', () => {
+          const key = card.dataset.key;
+          const track = normalizedTracks.find(t => t._key === key);
+          if (track) showTrackModal(track);
+        });
+      });
+      document.querySelectorAll('.artist').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const artistNorm = e.target.dataset.artist;
+          showArtistModal(artistNorm);
+        });
+      });
+    }
+
+    function renderBrowseView() {
+      let html = '';
+      const sortedEvents = Object.keys(eventTree).sort().reverse(); // newest first
+
+      sortedEvents.forEach(event => {
+        html += `
+          <div class="section-title" data-event="${escapeHtml(event)}">
+            ${escapeHtml(event)}
+          </div>
+          <div class="collapsible" id="event-${btoa(event)}">
+        `;
+
+        const contributors = eventTree[event];
+        const sortedContribs = Object.keys(contributors).sort();
+
+        sortedContribs.forEach(contrib => {
+          html += `
+            <div style="margin-left:24px;margin-top:12px;">
+              <strong>👤 ${escapeHtml(contrib)}</strong>
+            </div>
+          `;
+
+          const phases = contributors[contrib];
+          const sortedPhases = Object.keys(phases).sort();
+
+          sortedPhases.forEach(phase => {
+            const phaseDisplay = phase === '—' ? 'Unspecified' : phase;
+            html += `
+              <div style="margin-left:48px;margin-top:8px;font-weight:bold;color:#4af;">⏳ ${escapeHtml(phaseDisplay)}</div>
+            `;
+            phases[phase].forEach(track => {
+              const history = getTrackHistory(track);
+              html += `
+                <div class="song-item" data-key="${escapeHtml(track._key)}" style="margin-left:64px;">
+                  <div class="title">${escapeHtml(track.title || '—')}</div>
+                  <div class="artist" data-artist="${escapeHtml(track._artistNorm)}">${escapeHtml(track.artist || 'Unknown')}</div>
+                  <div class="meta">🔁 ${history.length} times</div>
+                </div>
+              `;
+            });
+          });
+        });
+
+        html += `</div>`;
+      });
+
+      document.getElementById('browseView').innerHTML = html || '<div>No data to browse.</div>';
+
+      // Attach collapse toggle
+      document.querySelectorAll('.section-title').forEach(title => {
+        title.addEventListener('click', () => {
+          const event = title.dataset.event;
+          const id = `event-${btoa(event)}`;
+          const content = document.getElementById(id);
+          title.classList.toggle('open');
+          content.classList.toggle('open');
+        });
+      });
+
+      // Attach listeners to new elements
+      document.querySelectorAll('.song-item').forEach(card => {
+        card.addEventListener('click', () => {
+          const key = card.dataset.key;
+          const track = normalizedTracks.find(t => t._key === key);
+          if (track) showTrackModal(track);
+        });
+      });
+      document.querySelectorAll('.artist').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const artistNorm = e.target.dataset.artist;
+          showArtistModal(artistNorm);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
