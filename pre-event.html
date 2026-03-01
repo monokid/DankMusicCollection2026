@@ -166,20 +166,41 @@
         .replace(/'/g, "&#039;");
     }
 
-    // Load data.json and detect clashes
+    // Fetch and process data.json
     fetch('data.json')
       .then(res => res.json())
       .then(data => {
+        // 🔥 FILTER OUT ANONYMOUS TRACKS
+        const validTracks = data.filter(track => {
+          const contrib = (track.contributor || '').trim();
+          // Skip if contributor is anonymized
+          if (contrib === 'Anonymous') return false;
+          // Optional: skip if filename looks generic (e.g., "Futa 01.mp3")
+          const fname = (track.filename || '').toLowerCase();
+          if (/^\w+\s+\d+\.mp3$/.test(fname)) return false; // e.g., "Rico 11.mp3"
+          if (/^[?!_]{2,}/.test(fname)) return false;       // e.g., "???.mp3"
+          return true;
+        });
+
+        // Group by normalized (artist, title)
         const trackMap = {};
-        data.forEach(track => {
+        validTracks.forEach(track => {
           const key = normalizeStr((track.artist || '') + ' - ' + (track.title || ''));
+          if (!key || key === ' - ') return; // skip empty
           if (!trackMap[key]) trackMap[key] = [];
           trackMap[key].push(track.contributor);
         });
 
+        // Find clashes (2+ unique contributors)
         const clashes = Object.entries(trackMap)
-          .filter(([key, contributors]) => contributors.length >= 2)
-          .map(([key, contributors]) => ({ key, contributors: [...new Set(contributors)] }));
+          .filter(([key, contributors]) => {
+            const unique = [...new Set(contributors)];
+            return unique.length >= 2;
+          })
+          .map(([key, contributors]) => ({
+            key,
+            contributors: [...new Set(contributors)]
+          }));
 
         const container = document.getElementById('clashList');
         if (clashes.length === 0) {
