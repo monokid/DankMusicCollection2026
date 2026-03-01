@@ -11,7 +11,6 @@
       --glow-accent: #f0f;
       --text-main: #e0f7ff;
       --card-bg: rgba(8, 12, 25, 0.8);
-      --search-bg: rgba(10, 20, 40, 0.7);
     }
 
     body {
@@ -98,27 +97,6 @@
       margin-bottom: 24px;
     }
 
-    input, button {
-      width: 100%;
-      padding: 14px;
-      font-size: 1.1rem;
-      border-radius: 10px;
-      border: 1px solid var(--glow-primary);
-      background: var(--search-bg);
-      color: white;
-      margin-bottom: 12px;
-    }
-
-    button {
-      background: rgba(0, 100, 150, 0.5);
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    button:hover {
-      box-shadow: 0 0 16px rgba(0, 170, 255, 0.7);
-    }
-
     .clash-card {
       background: rgba(20, 10, 30, 0.7);
       padding: 20px;
@@ -144,10 +122,13 @@
 
     .reveal-btn {
       background: rgba(100, 0, 100, 0.5);
-      width: auto;
       padding: 8px 20px;
       font-size: 1rem;
       margin-top: 10px;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
     }
 
     .status {
@@ -165,68 +146,15 @@
 
   <div class="section">
     <div class="card">
-      <h2>Create Event</h2>
-      <input type="text" id="eventName" placeholder="Event name (e.g., 20260515 Trip)" />
-      <input type="text" id="eventDate" placeholder="Date (optional)" />
-      <button id="createEvent">Create Event</button>
-      <div class="status" id="eventStatus"></div>
-    </div>
-
-    <div class="card" id="submitSection" style="display:none;">
-      <h2>Submit Your Playlist</h2>
-      <input type="text" id="participantName" placeholder="Your name (or 'Person A' for anonymity)" />
-      <input type="file" id="jsonUpload" accept=".json" />
-      <button id="submitBtn">Submit Playlist</button>
-      <div class="status" id="submitStatus"></div>
-    </div>
-
-    <div class="card" id="clashSection" style="display:none;">
       <h2>⚠️ Potential Duplicates</h2>
-      <div id="clashList"></div>
-      <button id="clearAllBtn" style="background:#800;">Clear All Submissions</button>
+      <div id="clashList">Loading clashes...</div>
     </div>
   </div>
 
   <script>
-    let submissions = [];
-    let eventName = '';
-
     function normalizeStr(s) {
       if (!s) return '';
       return s.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-    }
-
-    function findClashes() {
-      const trackMap = {};
-      submissions.forEach(sub => {
-        sub.tracks.forEach(track => {
-          const key = normalizeStr((track.artist || '') + ' - ' + (track.title || ''));
-          if (!trackMap[key]) trackMap[key] = [];
-          trackMap[key].push(sub.name);
-        });
-      });
-
-      const clashes = Object.entries(trackMap)
-        .filter(([key, names]) => names.length >= 2)
-        .map(([key, names]) => ({ key, names }));
-
-      return clashes;
-    }
-
-    function renderClashes(clashes) {
-      const container = document.getElementById('clashList');
-      if (clashes.length === 0) {
-        container.innerHTML = '<div>No duplicates found. ✨</div>';
-        return;
-      }
-
-      container.innerHTML = clashes.map(clash => `
-        <div class="clash-card">
-          <div><strong>Submitted by:</strong> ${escapeHtml(clash.names.join(', '))}</div>
-          <div class="clash-hidden">[ Song hidden to preserve surprise ]</div>
-          <button class="reveal-btn" onclick="revealSong(this, '${escapeHtml(clash.key)}')">Reveal Song</button>
-        </div>
-      `).join('');
     }
 
     function escapeHtml(text) {
@@ -238,7 +166,42 @@
         .replace(/'/g, "&#039;");
     }
 
-    // Reveal function (global for inline onclick)
+    // Load data.json and detect clashes
+    fetch('data.json')
+      .then(res => res.json())
+      .then(data => {
+        const trackMap = {};
+        data.forEach(track => {
+          const key = normalizeStr((track.artist || '') + ' - ' + (track.title || ''));
+          if (!trackMap[key]) trackMap[key] = [];
+          trackMap[key].push(track.contributor);
+        });
+
+        const clashes = Object.entries(trackMap)
+          .filter(([key, contributors]) => contributors.length >= 2)
+          .map(([key, contributors]) => ({ key, contributors: [...new Set(contributors)] }));
+
+        const container = document.getElementById('clashList');
+        if (clashes.length === 0) {
+          container.innerHTML = '<div>No duplicates found. ✨</div>';
+          return;
+        }
+
+        container.innerHTML = clashes.map(clash => `
+          <div class="clash-card">
+            <div><strong>Submitted by:</strong> ${escapeHtml(clash.contributors.join(', '))}</div>
+            <div class="clash-hidden">[ Song hidden to preserve surprise ]</div>
+            <button class="reveal-btn" onclick="revealSong(this, '${escapeHtml(clash.key)}')">Reveal Song</button>
+          </div>
+        `).join('');
+      })
+      .catch(err => {
+        document.getElementById('clashList').innerHTML = 
+          '<div style="color:#f66;text-align:center;">❌ Failed to load data.json</div>';
+        console.error(err);
+      });
+
+    // Reveal function
     window.revealSong = function(button, key) {
       const parts = key.split(' - ');
       const artist = parts[0] ? parts[0].replace(/[^a-z0-9]/gi, ' ') : 'Unknown';
@@ -250,60 +213,6 @@
       hiddenDiv.textContent = `Song: "${songDisplay}"`;
       button.style.display = 'none';
     };
-
-    // UI setup
-    document.getElementById('createEvent').addEventListener('click', () => {
-      const name = document.getElementById('eventName').value.trim();
-      if (!name) {
-        document.getElementById('eventStatus').textContent = 'Please enter an event name.';
-        return;
-      }
-      eventName = name;
-      document.getElementById('eventStatus').textContent = `Event created: ${name}`;
-      document.getElementById('submitSection').style.display = 'block';
-    });
-
-    document.getElementById('submitBtn').addEventListener('click', () => {
-      const name = document.getElementById('participantName').value.trim();
-      const fileInput = document.getElementById('jsonUpload');
-      if (!name) {
-        document.getElementById('submitStatus').textContent = 'Please enter your name.';
-        return;
-      }
-      if (!fileInput.files.length) {
-        document.getElementById('submitStatus').textContent = 'Please select a data.json file.';
-        return;
-      }
-
-      const file = fileInput.files[0];
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const tracks = JSON.parse(e.target.result);
-          submissions.push({ name, tracks });
-          document.getElementById('submitStatus').textContent = `✅ ${name}'s playlist submitted.`;
-          fileInput.value = '';
-          
-          // Show clash section if ≥2 submissions
-          if (submissions.length >= 2) {
-            const clashes = findClashes();
-            renderClashes(clashes);
-            document.getElementById('clashSection').style.display = 'block';
-          }
-        } catch (err) {
-          document.getElementById('submitStatus').textContent = '❌ Invalid JSON file.';
-          console.error(err);
-        }
-      };
-      reader.readAsText(file);
-    });
-
-    document.getElementById('clearAllBtn').addEventListener('click', () => {
-      submissions = [];
-      document.getElementById('clashList').innerHTML = '';
-      document.getElementById('clashSection').style.display = 'none';
-      document.getElementById('submitStatus').textContent = 'All submissions cleared.';
-    });
   </script>
 </body>
 </html>
