@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pre-Event Clash Detector</title>
+  <style>
+    :root {
+      --glow-primary: #0af;
+      --glow-secondary: #0ff;
+      --glow-accent: #f0f;
+      --text-main: #e0f7ff;
+      --card-bg: rgba(8, 12, 25, 0.8);
+      --search-bg: rgba(10, 20, 40, 0.7);
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: #000;
+      color: var(--text-main);
+      font-family: 'Exo 2', sans-serif;
+      overflow-x: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 40px;
+    }
+
+    /* Animated pulsing gradient background */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(circle at 30% 20%, var(--glow-primary), transparent 30%),
+                  radial-gradient(circle at 80% 70%, var(--glow-secondary), transparent 30%),
+                  radial-gradient(circle at 50% 50%, var(--glow-accent), transparent 40%);
+      animation: pulse 12s ease-in-out infinite;
+      opacity: 0.2;
+      z-index: -2;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Colorful animated stars */
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image:
+        radial-gradient(1px 1px at 10% 15%, #0ff, transparent 60%),
+        radial-gradient(1px 1px at 25% 30%, #f0f, transparent 60%),
+        radial-gradient(1px 1px at 40% 10%, #0af, transparent 60%),
+        radial-gradient(1px 1px at 60% 40%, #ff0, transparent 60%),
+        radial-gradient(1px 1px at 75% 60%, #0f0, transparent 60%),
+        radial-gradient(1px 1px at 90% 20%, #f00, transparent 60%),
+        radial-gradient(1px 1px at 50% 80%, #0ff, transparent 60%),
+        radial-gradient(1px 1px at 30% 70%, #f0f, transparent 60%);
+      animation: starDrift 25s linear infinite;
+      z-index: -1;
+    }
+
+    @keyframes starDrift {
+      from { background-position: 0 0; }
+      to { background-position: 100vw 100vh; }
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2.2rem;
+      margin: 0 0 20px;
+      background: linear-gradient(90deg, var(--glow-primary), var(--glow-secondary), var(--glow-accent));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .section {
+      width: 100%;
+      max-width: 650px;
+      margin: 0 auto 24px;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: 16px;
+      border: 1px solid var(--glow-primary);
+      box-shadow: 0 0 20px rgba(0, 170, 255, 0.3);
+      margin-bottom: 24px;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 14px;
+      font-size: 1.1rem;
+      border-radius: 10px;
+      border: 1px solid var(--glow-primary);
+      background: var(--search-bg);
+      color: white;
+      margin-bottom: 12px;
+    }
+
+    button {
+      background: rgba(0, 100, 150, 0.5);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      box-shadow: 0 0 16px rgba(0, 170, 255, 0.7);
+    }
+
+    .clash-card {
+      background: rgba(20, 10, 30, 0.7);
+      padding: 20px;
+      border-radius: 14px;
+      border-left: 4px solid var(--glow-accent);
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .clash-hidden {
+      font-size: 1.3rem;
+      color: #888;
+      font-style: italic;
+      margin: 12px 0;
+    }
+
+    .clash-revealed {
+      font-size: 1.4rem;
+      color: #fff;
+      margin: 12px 0;
+      font-weight: bold;
+    }
+
+    .reveal-btn {
+      background: rgba(100, 0, 100, 0.5);
+      width: auto;
+      padding: 8px 20px;
+      font-size: 1rem;
+      margin-top: 10px;
+    }
+
+    .status {
+      text-align: center;
+      margin: 16px 0;
+      color: #8cf;
+      font-style: italic;
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700&display=swap');
+  </style>
+</head>
+<body>
+  <h1>🌀 Pre-Event Clash Detector</h1>
+
+  <div class="section">
+    <div class="card">
+      <h2>Create Event</h2>
+      <input type="text" id="eventName" placeholder="Event name (e.g., 20260515 Trip)" />
+      <input type="text" id="eventDate" placeholder="Date (optional)" />
+      <button id="createEvent">Create Event</button>
+      <div class="status" id="eventStatus"></div>
+    </div>
+
+    <div class="card" id="submitSection" style="display:none;">
+      <h2>Submit Your Playlist</h2>
+      <input type="text" id="participantName" placeholder="Your name (or 'Person A' for anonymity)" />
+      <input type="file" id="jsonUpload" accept=".json" />
+      <button id="submitBtn">Submit Playlist</button>
+      <div class="status" id="submitStatus"></div>
+    </div>
+
+    <div class="card" id="clashSection" style="display:none;">
+      <h2>⚠️ Potential Duplicates</h2>
+      <div id="clashList"></div>
+      <button id="clearAllBtn" style="background:#800;">Clear All Submissions</button>
+    </div>
+  </div>
+
+  <script>
+    let submissions = [];
+    let eventName = '';
+
+    function normalizeStr(s) {
+      if (!s) return '';
+      return s.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
+    function findClashes() {
+      const trackMap = {};
+      submissions.forEach(sub => {
+        sub.tracks.forEach(track => {
+          const key = normalizeStr((track.artist || '') + ' - ' + (track.title || ''));
+          if (!trackMap[key]) trackMap[key] = [];
+          trackMap[key].push(sub.name);
+        });
+      });
+
+      const clashes = Object.entries(trackMap)
+        .filter(([key, names]) => names.length >= 2)
+        .map(([key, names]) => ({ key, names }));
+
+      return clashes;
+    }
+
+    function renderClashes(clashes) {
+      const container = document.getElementById('clashList');
+      if (clashes.length === 0) {
+        container.innerHTML = '<div>No duplicates found. ✨</div>';
+        return;
+      }
+
+      container.innerHTML = clashes.map(clash => `
+        <div class="clash-card">
+          <div><strong>Submitted by:</strong> ${escapeHtml(clash.names.join(', '))}</div>
+          <div class="clash-hidden">[ Song hidden to preserve surprise ]</div>
+          <button class="reveal-btn" onclick="revealSong(this, '${escapeHtml(clash.key)}')">Reveal Song</button>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(text) {
+      return text.toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // Reveal function (global for inline onclick)
+    window.revealSong = function(button, key) {
+      const parts = key.split(' - ');
+      const artist = parts[0] ? parts[0].replace(/[^a-z0-9]/gi, ' ') : 'Unknown';
+      const title = parts[1] ? parts[1].replace(/[^a-z0-9]/gi, ' ') : 'Unknown';
+      const songDisplay = `${title} by ${artist}`;
+      
+      const hiddenDiv = button.previousElementSibling;
+      hiddenDiv.className = 'clash-revealed';
+      hiddenDiv.textContent = `Song: "${songDisplay}"`;
+      button.style.display = 'none';
+    };
+
+    // UI setup
+    document.getElementById('createEvent').addEventListener('click', () => {
+      const name = document.getElementById('eventName').value.trim();
+      if (!name) {
+        document.getElementById('eventStatus').textContent = 'Please enter an event name.';
+        return;
+      }
+      eventName = name;
+      document.getElementById('eventStatus').textContent = `Event created: ${name}`;
+      document.getElementById('submitSection').style.display = 'block';
+    });
+
+    document.getElementById('submitBtn').addEventListener('click', () => {
+      const name = document.getElementById('participantName').value.trim();
+      const fileInput = document.getElementById('jsonUpload');
+      if (!name) {
+        document.getElementById('submitStatus').textContent = 'Please enter your name.';
+        return;
+      }
+      if (!fileInput.files.length) {
+        document.getElementById('submitStatus').textContent = 'Please select a data.json file.';
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const tracks = JSON.parse(e.target.result);
+          submissions.push({ name, tracks });
+          document.getElementById('submitStatus').textContent = `✅ ${name}'s playlist submitted.`;
+          fileInput.value = '';
+          
+          // Show clash section if ≥2 submissions
+          if (submissions.length >= 2) {
+            const clashes = findClashes();
+            renderClashes(clashes);
+            document.getElementById('clashSection').style.display = 'block';
+          }
+        } catch (err) {
+          document.getElementById('submitStatus').textContent = '❌ Invalid JSON file.';
+          console.error(err);
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById('clearAllBtn').addEventListener('click', () => {
+      submissions = [];
+      document.getElementById('clashList').innerHTML = '';
+      document.getElementById('clashSection').style.display = 'none';
+      document.getElementById('submitStatus').textContent = 'All submissions cleared.';
+    });
+  </script>
+</body>
+</html>
