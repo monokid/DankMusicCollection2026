@@ -138,6 +138,21 @@
       font-style: italic;
     }
 
+    button {
+      background: rgba(0, 100, 150, 0.5);
+      color: white;
+      border: 1px solid var(--glow-primary);
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      box-shadow: 0 0 16px rgba(0, 170, 255, 0.7);
+    }
+
     @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700&display=swap');
   </style>
 </head>
@@ -146,8 +161,16 @@
 
   <div class="section">
     <div class="card">
+      <h2>Load Your Playlist</h2>
+      <p>Place your <code>data.json</code> in the same folder as this page.</p>
+      <button id="loadBtn">Load Playlist & Check for Clashes</button>
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="card" id="clashSection" style="display:none;">
       <h2>⚠️ Potential Duplicates</h2>
-      <div id="clashList">Loading clashes...</div>
+      <div id="clashList"></div>
+      <button id="clearBtn" style="background:#800; margin-top:16px;">Start Over</button>
     </div>
   </div>
 
@@ -166,63 +189,7 @@
         .replace(/'/g, "&#039;");
     }
 
-    // Fetch and process data.json
-    fetch('data.json')
-      .then(res => res.json())
-      .then(data => {
-        // 🔥 FILTER OUT ANONYMOUS TRACKS
-        const validTracks = data.filter(track => {
-          const contrib = (track.contributor || '').trim();
-          // Skip if contributor is anonymized
-          if (contrib === 'Anonymous') return false;
-          // Optional: skip if filename looks generic (e.g., "Futa 01.mp3")
-          const fname = (track.filename || '').toLowerCase();
-          if (/^\w+\s+\d+\.mp3$/.test(fname)) return false; // e.g., "Rico 11.mp3"
-          if (/^[?!_]{2,}/.test(fname)) return false;       // e.g., "???.mp3"
-          return true;
-        });
-
-        // Group by normalized (artist, title)
-        const trackMap = {};
-        validTracks.forEach(track => {
-          const key = normalizeStr((track.artist || '') + ' - ' + (track.title || ''));
-          if (!key || key === ' - ') return; // skip empty
-          if (!trackMap[key]) trackMap[key] = [];
-          trackMap[key].push(track.contributor);
-        });
-
-        // Find clashes (2+ unique contributors)
-        const clashes = Object.entries(trackMap)
-          .filter(([key, contributors]) => {
-            const unique = [...new Set(contributors)];
-            return unique.length >= 2;
-          })
-          .map(([key, contributors]) => ({
-            key,
-            contributors: [...new Set(contributors)]
-          }));
-
-        const container = document.getElementById('clashList');
-        if (clashes.length === 0) {
-          container.innerHTML = '<div>No duplicates found. ✨</div>';
-          return;
-        }
-
-        container.innerHTML = clashes.map(clash => `
-          <div class="clash-card">
-            <div><strong>Submitted by:</strong> ${escapeHtml(clash.contributors.join(', '))}</div>
-            <div class="clash-hidden">[ Song hidden to preserve surprise ]</div>
-            <button class="reveal-btn" onclick="revealSong(this, '${escapeHtml(clash.key)}')">Reveal Song</button>
-          </div>
-        `).join('');
-      })
-      .catch(err => {
-        document.getElementById('clashList').innerHTML = 
-          '<div style="color:#f66;text-align:center;">❌ Failed to load data.json</div>';
-        console.error(err);
-      });
-
-    // Reveal function
+    // Reveal function (global for inline onclick)
     window.revealSong = function(button, key) {
       const parts = key.split(' - ');
       const artist = parts[0] ? parts[0].replace(/[^a-z0-9]/gi, ' ') : 'Unknown';
@@ -234,6 +201,40 @@
       hiddenDiv.textContent = `Song: "${songDisplay}"`;
       button.style.display = 'none';
     };
-  </script>
-</body>
-</html>
+
+    document.getElementById('loadBtn').addEventListener('click', () => {
+      const status = document.getElementById('status');
+      const clashSection = document.getElementById('clashSection');
+      const clashList = document.getElementById('clashList');
+
+      status.textContent = 'Loading data.json...';
+      clashSection.style.display = 'none';
+
+      fetch('data.json')
+        .then(res => {
+          if (!res.ok) throw new Error('File not found');
+          return res.json();
+        })
+        .then(data => {
+          // 🔥 FILTER OUT ANONYMOUS TRACKS
+          const validTracks = data.filter(track => {
+            const contrib = (track.contributor || '').trim();
+            if (contrib === 'Anonymous') return false;
+            const fname = (track.filename || '').toLowerCase();
+            if (/^\w+\s+\d+\.mp3$/.test(fname)) return false; // e.g., "Rico 11.mp3"
+            if (/^[?!_]{2,}/.test(fname)) return false;       // e.g., "???.mp3"
+            return true;
+          });
+
+          // Group by normalized (artist, title)
+          const trackMap = {};
+          validTracks.forEach(track => {
+            const key = normalizeStr((track.artist || '') + ' - ' + (track.title || ''));
+            if (!key || key === ' - ') return;
+            if (!trackMap[key]) trackMap[key] = [];
+            trackMap[key].push(track.contributor);
+          });
+
+          // Find clashes (2+ unique contributors)
+          const clashes = Object.entries(trackMap)
+            .filter(([key,
